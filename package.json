@@ -1,0 +1,25 @@
+{
+  "name": "free-256",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://marif@thor.enseirb-matmeca.fr/git/free-256"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.21.2",
+    "http": "^0.0.1-security",
+    "mqtt": "^5.10.4",
+    "mysql": "^2.18.1",
+    "nodemailer": "^6.10.1",
+    "socket.io": "^4.8.1"
+  }
+}

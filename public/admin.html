@@ -1,0 +1,1551 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Administration - Gestion des Entreprises</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Temporairement commenté pour tester si c'est la cause du problème -->
+  <!-- <link rel="stylesheet" href="style.css"> -->
+  <style>
+    /* Styles spécifiques à l'administration */
+    .admin-container {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      padding: 1.5rem;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 768px) {
+      .admin-container {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .full-width {
+        grid-column: 1 / -1;
+      }
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    .card-header {
+      padding: 1.25rem 1.5rem;
+      background: #f8fafc;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: #1f2937;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-weight: 500;
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 0.95rem;
+    }
+
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    .btn-success {
+      background: #22c55e;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #16a34a;
+    }
+
+    .btn-warning {
+      background: #f59e0b;
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background: #d97706;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+      margin-bottom: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 0.75rem 1rem;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-weight: 600;
+      color: #4b5563;
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    td {
+      border-bottom: 1px solid #e5e7eb;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .badge-admin {
+      background-color: #4f46e5;
+      color: white;
+    }
+
+    .badge-user {
+      background-color: #6b7280;
+      color: white;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background-color: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+      transform: translateY(-20px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: #6b7280;
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .modal-footer {
+      padding: 1.25rem 1.5rem;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: #4b5563;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      transition: border-color 0.3s;
+    }
+
+    .form-control:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .feux-list {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .feu-item {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .feu-item:last-child {
+      border-bottom: none;
+    }
+
+    .checkbox-container {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .alert {
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+
+    .alert-success {
+      background-color: #dcfce7;
+      color: #16a34a;
+      border: 1px solid #86efac;
+    }
+
+    .alert-danger {
+      background-color: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+    }
+
+    .alert-warning {
+      background-color: #fffbeb;
+      color: #d97706;
+      border: 1px solid #fcd34d;
+    }
+
+    /* Styles pour remplacer style.css */
+    :root {
+      --primary: #3b82f6;
+      --primary-dark: #2563eb;
+      --primary-light: #60a5fa;
+      --secondary: #0ea5e9;
+      --danger: #ef4444;
+      --danger-light: #fecaca;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --success: #22c55e;
+      --success-light: #dcfce7;
+      --info: #6366f1;
+      --info-light: #e0e7ff;
+      --text-dark: #1f2937;
+      --text-medium: #4b5563;
+      --text-light: #6b7280;
+      --text-lighter: #9ca3af;
+      --bg-light: #f8fafc;
+      --bg-lighter: #ffffff;
+      --bg-dark: #1e293b;
+      --border-light: #e5e7eb;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-light);
+      color: var(--text-dark);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* Écran de connexion */
+    #loginScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+      z-index: 1000;
+    }
+
+    .login-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg-lighter);
+      padding: 2.5rem;
+      border-radius: 12px;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+      width: 90%;
+      max-width: 400px;
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .login-logo i {
+      font-size: 3rem;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .login-container h2 {
+      font-family: 'Montserrat', sans-serif;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      color: var(--text-dark);
+      font-weight: 600;
+    }
+
+    .field {
+      margin-bottom: 1.25rem;
+    }
+
+    .field label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      color: var(--text-medium);
+    }
+
+    .field input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .field input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: 0.75rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-login:hover {
+      background: var(--primary-dark);
+    }
+
+    /* Header principal */
+    .header {
+      background: linear-gradient(135deg, var(--primary-dark), var(--secondary));
+      color: white;
+      padding: 1rem 1.5rem;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+
+    .header h1 {
+      font-family: 'Montserrat', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .header-btn {
+      background: rgba(255,255,255,0.15);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+
+    .header-btn:hover {
+      background: rgba(255,255,255,0.25);
+    }
+    
+    .notification-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 350px;
+    }
+
+    .notification {
+      padding: 1rem;
+      border-radius: 8px;
+      color: white;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .notification-icon {
+      margin-right: 0.75rem;
+      font-size: 1.25rem;
+    }
+
+    .notification-content {
+      flex: 1;
+    }
+
+    .notification-title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .notification.success {
+      background-color: var(--success);
+    }
+
+    .notification.error {
+      background-color: var(--danger);
+    }
+
+    .notification.info {
+      background-color: var(--info);
+    }
+
+    .notification.warning {
+      background-color: var(--warning);
+    }
+  </style>
+</head>
+<body>
+  <!-- Debug info -->
+  <div id="debug-info" style="position: fixed; bottom: 0; right: 0; background: rgba(0,0,0,0.8); color: white; padding: 10px; z-index: 9999; max-width: 300px; font-size: 12px;">
+    Débogage en cours...
+  </div>
+  
+  <!-- Conteneur de notifications -->
+  <div class="notification-container" id="notificationContainer"></div>
+
+  <!-- Écran de connexion - Visible par défaut pour test -->
+  <div id="loginScreen">
+    <div class="login-container">
+      <div class="login-logo">
+        <i class="fas fa-user-shield"></i>
+        <h2>Administration</h2>
+      </div>
+      <div class="field">
+        <label for="username">Utilisateur</label>
+        <input type="text" id="username" placeholder="Entrez votre nom d'utilisateur" value="admin" />
+      </div>
+      <div class="field">
+        <label for="password">Mot de passe</label>
+        <input type="password" id="password" placeholder="Entrez votre mot de passe" value="admin" />
+      </div>
+      <button class="btn-login" id="loginBtn">
+        <i class="fas fa-sign-in-alt"></i>
+        Se Connecter
+      </button>
+    </div>
+  </div>
+
+  <!-- Application principale - initialement cachée -->
+  <div id="app" style="display: none;">
+    <!-- Header -->
+    <div class="header">
+      <div class="header-content">
+        <h1>
+          <i class="fas fa-user-shield"></i>
+          Administration
+        </h1>
+        
+        <!-- Actions pour desktop -->
+        <div class="header-actions">
+          <a href="/" class="header-btn">
+            <i class="fas fa-tachometer-alt"></i>
+            Tableau de bord
+          </a>
+          <a href="/historique.html" class="header-btn">
+            <i class="fas fa-history"></i>
+            Historique
+          </a>
+          <button id="logoutBtn" class="header-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            Déconnexion
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Contenu principal -->
+    <div class="admin-container">
+      <!-- Carte de gestion des entreprises -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <i class="fas fa-building"></i>
+            Gestion des Entreprises
+          </h2>
+          <button id="btnAddEntreprise" class="btn btn-primary">
+            <i class="fas fa-plus"></i>
+            Ajouter
+          </button>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table id="entreprisesTable">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Email</th>
+                  <th>Rôle</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Les entreprises seront ajoutées ici dynamiquement -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Carte de gestion des feux par entreprise -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <i class="fas fa-traffic-light"></i>
+            Feux par Entreprise
+          </h2>
+          <select id="entrepriseSelect" class="form-control" style="width: auto;">
+            <option value="">Sélectionner une entreprise</option>
+            <!-- Les entreprises seront ajoutées ici dynamiquement -->
+          </select>
+        </div>
+        <div class="card-body">
+          <div id="feuxContainer">
+            <p>Sélectionnez une entreprise pour voir ses feux associés</p>
+          </div>
+          <button id="btnAssociateFeux" class="btn btn-primary" style="display: none;">
+            <i class="fas fa-link"></i>
+            Associer des feux
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Modal pour ajouter une entreprise -->
+    <div class="modal-overlay" id="addEntrepriseModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Ajouter une entreprise</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="entrepriseId">Identifiant</label>
+            <input type="text" id="entrepriseId" class="form-control" placeholder="Identifiant unique">
+          </div>
+          <div class="form-group">
+            <label for="entrepriseEmail">Email</label>
+            <input type="email" id="entrepriseEmail" class="form-control" placeholder="email@exemple.com">
+          </div>
+          <div class="form-group">
+            <label for="entreprisePassword">Mot de passe</label>
+            <input type="password" id="entreprisePassword" class="form-control" placeholder="Mot de passe">
+          </div>
+          <div class="form-group">
+            <label for="entrepriseRole">Rôle</label>
+            <select id="entrepriseRole" class="form-control">
+              <option value="user">Utilisateur</option>
+              <option value="admin">Administrateur</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" id="saveEntrepriseBtn">
+            <i class="fas fa-save"></i>
+            Enregistrer
+          </button>
+          <button class="btn btn-danger modal-close-btn">
+            <i class="fas fa-times"></i>
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal pour modifier une entreprise -->
+    <div class="modal-overlay" id="editEntrepriseModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Modifier une entreprise</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editEntrepriseId">
+          <div class="form-group">
+            <label for="editEntrepriseEmail">Email</label>
+            <input type="email" id="editEntrepriseEmail" class="form-control" placeholder="email@exemple.com">
+          </div>
+          <div class="form-group">
+            <label for="editEntreprisePassword">Mot de passe (laisser vide pour ne pas changer)</label>
+            <input type="password" id="editEntreprisePassword" class="form-control" placeholder="Nouveau mot de passe">
+          </div>
+          <div class="form-group">
+            <label for="editEntrepriseRole">Rôle</label>
+            <select id="editEntrepriseRole" class="form-control">
+              <option value="user">Utilisateur</option>
+              <option value="admin">Administrateur</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" id="updateEntrepriseBtn">
+            <i class="fas fa-save"></i>
+            Mettre à jour
+          </button>
+          <button class="btn btn-danger modal-close-btn">
+            <i class="fas fa-times"></i>
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal pour associer des feux -->
+    <div class="modal-overlay" id="associateFeuxModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Associer des feux à <span id="entrepriseNameAssoc"></span></h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Feux disponibles</label>
+            <div class="feux-list" id="feuxDisponiblesList">
+              <!-- Les feux disponibles seront ajoutés ici dynamiquement -->
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" id="saveAssociationBtn">
+            <i class="fas fa-save"></i>
+            Associer les feux sélectionnés
+          </button>
+          <button class="btn btn-danger modal-close-btn">
+            <i class="fas fa-times"></i>
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de confirmation de suppression -->
+    <div class="modal-overlay" id="confirmDeleteModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">Confirmation</h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer l'entreprise <strong id="deleteEntrepriseName"></strong> ?</p>
+          <p>Cette action est irréversible. Les feux associés seront réassignés à 'system'.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-danger" id="confirmDeleteBtn">
+            <i class="fas fa-trash"></i>
+            Supprimer
+          </button>
+          <button class="btn btn-primary modal-close-btn">
+            <i class="fas fa-times"></i>
+            Annuler
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Débogage initial
+    console.log("==== DEBUG: Script admin.html commence à charger ====");
+    
+    // Variables globales
+    let currentUser = null;
+    let entreprises = [];
+    let feuxDisponibles = [];
+    let feuxParEntreprise = {};
+    let selectedEntreprise = '';
+    
+    // Test de chargement de style.css
+    document.addEventListener('DOMContentLoaded', () => {
+      const styleLoaded = Array.from(document.styleSheets).some(sheet => {
+        try {
+          return sheet.href && sheet.href.includes('style.css');
+        } catch (e) {
+          return false;
+        }
+      });
+      console.log("==== DEBUG: style.css chargé:", styleLoaded, "====");
+      
+      // Afficher les informations de débogage
+      updateDebugInfo("DOM chargé. Style.css: " + (styleLoaded ? "OUI" : "NON"));
+    });
+    
+    // Fonction pour mettre à jour l'info de débogage
+    function updateDebugInfo(message) {
+      const debugInfo = document.getElementById('debug-info');
+      if (debugInfo) {
+        const now = new Date();
+        const timestamp = now.getHours() + ':' + now.getMinutes() + ':' + now.getSeconds();
+        debugInfo.innerHTML += `<br>${timestamp} - ${message}`;
+        debugInfo.scrollTop = debugInfo.scrollHeight;
+      }
+    }
+
+    // Fonctions utilitaires
+    function showNotification(message, type = 'info') {
+      updateDebugInfo(`Notification: ${type} - ${message}`);
+      const notifContainer = document.getElementById('notificationContainer');
+      const notif = document.createElement('div');
+      notif.className = `notification ${type}`;
+      
+      let title = '';
+      let icon = '';
+      
+      switch(type) {
+        case 'success':
+          title = 'Succès';
+          icon = 'fas fa-check-circle';
+          break;
+        case 'error':
+          title = 'Erreur';
+          icon = 'fas fa-exclamation-circle';
+          break;
+        case 'info':
+          title = 'Information';
+          icon = 'fas fa-info-circle';
+          break;
+        case 'warning':
+          title = 'Attention';
+          icon = 'fas fa-exclamation-triangle';
+          break;
+      }
+      
+      notif.innerHTML = `
+        <div class="notification-icon">
+          <i class="${icon}"></i>
+        </div>
+        <div class="notification-content">
+          <div class="notification-title">${title}</div>
+          <div>${message}</div>
+        </div>
+      `;
+      
+      notifContainer.appendChild(notif);
+      
+      // Disparaître après 5 secondes
+      setTimeout(() => {
+        notif.style.opacity = '0';
+        setTimeout(() => {
+          notifContainer.removeChild(notif);
+        }, 300);
+      }, 5000);
+    }
+
+    function toggleModal(modalId, show) {
+      updateDebugInfo(`Toggle modal: ${modalId}, show: ${show}`);
+      const modal = document.getElementById(modalId);
+      if (show) {
+        modal.classList.add('active');
+      } else {
+        modal.classList.remove('active');
+      }
+    }
+
+    // Fonctions pour les API calls
+    async function fetchEntreprises() {
+      console.log("==== DEBUG: Tentative de récupération des entreprises ====");
+      updateDebugInfo("Récupération des entreprises...");
+      try {
+        const url = `/api/entreprises?utilisateur=${currentUser.username}`;
+        console.log("URL de l'API:", url);
+        updateDebugInfo(`API URL: ${url}`);
+        
+        const response = await fetch(url);
+        console.log("Réponse de l'API:", response.status, response.statusText);
+        updateDebugInfo(`Réponse API: ${response.status} ${response.statusText}`);
+        
+        if (!response.ok) {
+          throw new Error('Erreur lors de la récupération des entreprises');
+        }
+        
+        const data = await response.json();
+        console.log("Données reçues:", data);
+        updateDebugInfo(`Données reçues: ${data.length} entreprises`);
+        
+        return data;
+      } catch (error) {
+        console.error('Erreur:', error);
+        updateDebugInfo(`ERREUR API: ${error.message}`);
+        showNotification(error.message, 'error');
+        return [];
+      }
+    }
+
+    async function fetchFeuxByEntreprise(entrepriseId) {
+  try {
+    // Encoder l'ID de l'entreprise pour les caractères spéciaux
+    const encodedId = encodeURIComponent(entrepriseId);
+    const url = `/api/entreprises/${encodedId}/feux?utilisateur=${currentUser.username}`;
+    console.log(`DEBUG client: Tentative de récupération depuis ${url}`);
+    
+    const response = await fetch(url);
+    if (!response.ok) {
+      // Examiner la réponse d'erreur
+      let errorText = "Erreur inconnue";
+      try {
+        const errorData = await response.json();
+        errorText = errorData.error || `HTTP ${response.status}`;
+      } catch (e) {
+        errorText = `HTTP ${response.status}`;
+      }
+      throw new Error(`Erreur récupération feux: ${errorText}`);
+    }
+    
+    const data = await response.json();
+    console.log(`${data.length} feux récupérés pour ${entrepriseId}`);
+    return data;
+  } catch (error) {
+    console.error(`Erreur pour ${entrepriseId}:`, error);
+    showNotification(`Impossible de récupérer les feux: ${error.message}`, "error");
+    return [];
+  }
+}
+
+   async function fetchFeuxDisponibles(excludeEntreprise = '') {
+     updateDebugInfo(`Récupération des feux disponibles (exclude=${excludeEntreprise})...`);
+     try {
+       const url = `/api/feux/disponibles?exclude=${excludeEntreprise}&utilisateur=${currentUser.username}`;
+       updateDebugInfo(`API URL: ${url}`);
+       
+       const response = await fetch(url);
+       updateDebugInfo(`Réponse API: ${response.status} ${response.statusText}`);
+       
+       if (!response.ok) {
+         throw new Error('Erreur lors de la récupération des feux disponibles');
+       }
+       
+       const data = await response.json();
+       updateDebugInfo(`Données reçues: ${data.length} feux disponibles`);
+       
+       return data;
+     } catch (error) {
+       console.error('Erreur:', error);
+       updateDebugInfo(`ERREUR API: ${error.message}`);
+       showNotification(error.message, 'error');
+       return [];
+     }
+   }
+
+   async function addEntreprise(entrepriseData) {
+     updateDebugInfo(`Ajout entreprise: ${entrepriseData.id}...`);
+     try {
+       const response = await fetch('/api/entreprises', {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+           ...entrepriseData,
+           utilisateur: currentUser.username
+         }),
+       });
+       
+       updateDebugInfo(`Réponse API: ${response.status} ${response.statusText}`);
+       const data = await response.json();
+       
+       if (!response.ok) {
+         throw new Error(data.error || 'Erreur lors de l\'ajout de l\'entreprise');
+       }
+       
+       updateDebugInfo(`Entreprise ajoutée: ${data.id || 'OK'}`);
+       showNotification('Entreprise ajoutée avec succès', 'success');
+       return data;
+     } catch (error) {
+       console.error('Erreur:', error);
+       updateDebugInfo(`ERREUR API: ${error.message}`);
+       showNotification(error.message, 'error');
+       throw error;
+     }
+   }
+
+   async function updateEntreprise(id, entrepriseData) {
+     updateDebugInfo(`Mise à jour entreprise: ${id}...`);
+     try {
+       const response = await fetch(`/api/entreprises/${id}`, {
+         method: 'PUT',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+           ...entrepriseData,
+           utilisateur: currentUser.username
+         }),
+       });
+       
+       updateDebugInfo(`Réponse API: ${response.status} ${response.statusText}`);
+       const data = await response.json();
+       
+       if (!response.ok) {
+         throw new Error(data.error || 'Erreur lors de la mise à jour de l\'entreprise');
+       }
+       
+       updateDebugInfo(`Entreprise mise à jour: ${id}`);
+       showNotification('Entreprise mise à jour avec succès', 'success');
+       return data;
+     } catch (error) {
+       console.error('Erreur:', error);
+       updateDebugInfo(`ERREUR API: ${error.message}`);
+       showNotification(error.message, 'error');
+       throw error;
+     }
+   }
+
+   async function deleteEntreprise(id) {
+     updateDebugInfo(`Suppression entreprise: ${id}...`);
+     try {
+       const response = await fetch(`/api/entreprises/${id}?utilisateur=${currentUser.username}`, {
+         method: 'DELETE',
+       });
+       
+       updateDebugInfo(`Réponse API: ${response.status} ${response.statusText}`);
+       const data = await response.json();
+       
+       if (!response.ok) {
+         throw new Error(data.error || 'Erreur lors de la suppression de l\'entreprise');
+       }
+       
+       updateDebugInfo(`Entreprise supprimée: ${id}`);
+       showNotification('Entreprise supprimée avec succès', 'success');
+       return data;
+     } catch (error) {
+       console.error('Erreur:', error);
+       updateDebugInfo(`ERREUR API: ${error.message}`);
+       showNotification(error.message, 'error');
+       throw error;
+     }
+   }
+
+   async function associateFeuxToEntreprise(entrepriseId, feuxIds) {
+     updateDebugInfo(`Association de ${feuxIds.length} feux à ${entrepriseId}...`);
+     try {
+       const response = await fetch(`/api/entreprises/${entrepriseId}/feux`, {
+         method: 'POST',
+         headers: {
+           'Content-Type': 'application/json',
+         },
+         body: JSON.stringify({
+           feux: feuxIds,
+           utilisateur: currentUser.username
+         }),
+       });
+       
+       updateDebugInfo(`Réponse API: ${response.status} ${response.statusText}`);
+       const data = await response.json();
+       
+       if (!response.ok) {
+         throw new Error(data.error || 'Erreur lors de l\'association des feux');
+       }
+       
+       updateDebugInfo(`Association réussie: ${data.updated || 0} feux`);
+       showNotification(`${data.updated} feux associés avec succès`, 'success');
+       return data;
+     } catch (error) {
+       console.error('Erreur:', error);
+       updateDebugInfo(`ERREUR API: ${error.message}`);
+       showNotification(error.message, 'error');
+       throw error;
+     }
+   }
+
+   async function dissociateFeuFromEntreprise(entrepriseId, feuId) {
+     updateDebugInfo(`Dissociation du feu ${feuId} de ${entrepriseId}...`);
+     try {
+       const response = await fetch(`/api/entreprises/${entrepriseId}/feux/${feuId}?utilisateur=${currentUser.username}`, {
+         method: 'DELETE',
+       });
+       
+       updateDebugInfo(`Réponse API: ${response.status} ${response.statusText}`);
+       const data = await response.json();
+       
+       if (!response.ok) {
+         throw new Error(data.error || 'Erreur lors de la dissociation du feu');
+       }
+       
+       updateDebugInfo(`Dissociation réussie: ${feuId}`);
+       showNotification('Feu dissocié avec succès', 'success');
+       return data;
+     } catch (error) {
+       console.error('Erreur:', error);
+       updateDebugInfo(`ERREUR API: ${error.message}`);
+       showNotification(error.message, 'error');
+       throw error;
+     }
+   }
+
+   // Fonctions pour gérer l'UI
+   function renderEntreprisesTable() {
+     updateDebugInfo("Rendu du tableau des entreprises");
+     const tbody = document.getElementById('entreprisesTable').querySelector('tbody');
+     tbody.innerHTML = '';
+     
+     if (entreprises.length === 0) {
+       updateDebugInfo("Aucune entreprise à afficher");
+       const tr = document.createElement('tr');
+       tr.innerHTML = `<td colspan="4" style="text-align: center;">Aucune entreprise trouvée</td>`;
+       tbody.appendChild(tr);
+       return;
+     }
+     
+     updateDebugInfo(`Affichage de ${entreprises.length} entreprises`);
+     entreprises.forEach(entreprise => {
+       const tr = document.createElement('tr');
+       
+       // Déterminer la classe de badge selon le rôle
+       const badgeClass = entreprise.Role === 'admin' ? 'badge-admin' : 'badge-user';
+       
+       tr.innerHTML = `
+         <td>${entreprise.ID}</td>
+         <td>${entreprise.email}</td>
+         <td><span class="badge ${badgeClass}">${entreprise.Role}</span></td>
+         <td class="action-buttons">
+           <button class="btn btn-warning btn-edit-entreprise" data-id="${entreprise.ID}">
+             <i class="fas fa-edit"></i>
+           </button>
+           <button class="btn btn-danger btn-delete-entreprise" data-id="${entreprise.ID}" ${entreprise.ID === 'admin' ? 'disabled' : ''}>
+             <i class="fas fa-trash"></i>
+           </button>
+         </td>
+       `;
+       
+       tbody.appendChild(tr);
+     });
+     
+     // Mettre à jour la liste déroulante des entreprises
+     const select = document.getElementById('entrepriseSelect');
+     select.innerHTML = '<option value="">Sélectionner une entreprise</option>';
+     
+     entreprises.forEach(entreprise => {
+       const option = document.createElement('option');
+       option.value = entreprise.ID;
+       option.textContent = entreprise.ID;
+       select.appendChild(option);
+     });
+     
+     // Ajouter les événements aux boutons
+     document.querySelectorAll('.btn-edit-entreprise').forEach(btn => {
+       btn.addEventListener('click', () => {
+         const id = btn.getAttribute('data-id');
+         openEditEntrepriseModal(id);
+       });
+     });
+     
+     document.querySelectorAll('.btn-delete-entreprise').forEach(btn => {
+       btn.addEventListener('click', () => {
+         const id = btn.getAttribute('data-id');
+         openDeleteConfirmModal(id);
+       });
+     });
+     
+     updateDebugInfo("Tableau des entreprises rendu avec succès");
+   }
+
+   function renderFeuxForEntreprise(entrepriseId) {
+     updateDebugInfo(`Rendu des feux pour l'entreprise ${entrepriseId}`);
+     const container = document.getElementById('feuxContainer');
+     container.innerHTML = '';
+     
+     const feux = feuxParEntreprise[entrepriseId] || [];
+     
+     if (feux.length === 0) {
+       container.innerHTML = '<p>Aucun feu associé à cette entreprise</p>';
+       updateDebugInfo("Aucun feu associé");
+       return;
+     }
+     
+     updateDebugInfo(`Affichage de ${feux.length} feux`);
+     const table = document.createElement('table');
+     table.innerHTML = `
+       <thead>
+         <tr>
+           <th>ID</th>
+           <th>Pays</th>
+           <th>Position</th>
+           <th>Action</th>
+         </tr>
+       </thead>
+       <tbody>
+         ${feux.map(feu => `
+           <tr>
+             <td>${feu.ID}</td>
+             <td>${feu.Pays || 'N/A'}</td>
+             <td>${feu.Position_Physique || 'N/A'}</td>
+             <td>
+               <button class="btn btn-danger btn-dissociate-feu" data-id="${feu.ID}">
+                 <i class="fas fa-unlink"></i>
+               </button>
+             </td>
+           </tr>
+         `).join('')}
+       </tbody>
+     `;
+     
+     container.appendChild(table);
+     
+     // Ajouter les événements aux boutons de dissociation
+     document.querySelectorAll('.btn-dissociate-feu').forEach(btn => {
+       btn.addEventListener('click', async () => {
+         const feuId = btn.getAttribute('data-id');
+         try {
+           updateDebugInfo(`Clic sur dissocier le feu ${feuId}`);
+           await dissociateFeuFromEntreprise(entrepriseId, feuId);
+           loadFeuxForEntreprise(entrepriseId);
+         } catch (error) {
+           console.error('Erreur lors de la dissociation:', error);
+           updateDebugInfo(`ERREUR dissociation: ${error.message}`);
+         }
+       });
+     });
+     
+     updateDebugInfo("Feux rendus avec succès");
+   }
+
+   function renderFeuxDisponibles() {
+     updateDebugInfo("Rendu des feux disponibles");
+     const container = document.getElementById('feuxDisponiblesList');
+     container.innerHTML = '';
+     
+     if (feuxDisponibles.length === 0) {
+       container.innerHTML = '<p class="p-3">Aucun feu disponible</p>';
+       updateDebugInfo("Aucun feu disponible");
+       return;
+     }
+     
+     updateDebugInfo(`Affichage de ${feuxDisponibles.length} feux disponibles`);
+     feuxDisponibles.forEach(feu => {
+       const item = document.createElement('div');
+       item.className = 'feu-item';
+       item.innerHTML = `
+         <div class="checkbox-container">
+           <input type="checkbox" id="feu-${feu.ID}" class="feu-checkbox" value="${feu.ID}">
+           <label for="feu-${feu.ID}">${feu.ID} (${feu.Position_Physique || 'Emplacement inconnu'})</label>
+         </div>
+         <span>${feu.Pays || 'N/A'}</span>
+       `;
+       
+       container.appendChild(item);
+     });
+     
+     updateDebugInfo("Feux disponibles rendus avec succès");
+   }
+
+   // Fonctions pour charger les données
+   async function loadEntreprises() {
+     updateDebugInfo("Chargement des entreprises...");
+     try {
+       document.getElementById('entreprisesTable').querySelector('tbody').innerHTML = 
+         '<tr><td colspan="4" style="text-align:center;">Chargement...</td></tr>';
+       
+       entreprises = await fetchEntreprises();
+       renderEntreprisesTable();
+       updateDebugInfo(`${entreprises.length} entreprises chargées`);
+     } catch (error) {
+       console.error('Erreur lors du chargement des entreprises:', error);
+       updateDebugInfo(`ERREUR chargement: ${error.message}`);
+     }
+   }
+
+   async function loadFeuxForEntreprise(entrepriseId) {
+     updateDebugInfo(`Chargement des feux pour ${entrepriseId}...`);
+     try {
+       document.getElementById('btnAssociateFeux').style.display = entrepriseId ? 'block' : 'none';
+       
+       if (!entrepriseId) {
+         document.getElementById('feuxContainer').innerHTML = '<p>Sélectionnez une entreprise pour voir ses feux associés</p>';
+         updateDebugInfo("Pas d'entreprise sélectionnée");
+         return;
+       }
+       
+       document.getElementById('feuxContainer').innerHTML = '<p>Chargement des feux...</p>';
+       feuxParEntreprise[entrepriseId] = await fetchFeuxByEntreprise(entrepriseId);
+       renderFeuxForEntreprise(entrepriseId);
+       updateDebugInfo(`${feuxParEntreprise[entrepriseId].length} feux chargés`);
+     } catch (error) {
+       console.error(`Erreur lors du chargement des feux pour ${entrepriseId}:`, error);
+       updateDebugInfo(`ERREUR chargement: ${error.message}`);
+     }
+   }
+
+   async function loadFeuxDisponibles(entrepriseId) {
+     updateDebugInfo(`Chargement des feux disponibles (exclude=${entrepriseId})...`);
+     try {
+       document.getElementById('feuxDisponiblesList').innerHTML = '<p class="p-3">Chargement...</p>';
+       feuxDisponibles = await fetchFeuxDisponibles(entrepriseId);
+       renderFeuxDisponibles();
+       updateDebugInfo(`${feuxDisponibles.length} feux disponibles chargés`);
+     } catch (error) {
+       console.error('Erreur lors du chargement des feux disponibles:', error);
+       updateDebugInfo(`ERREUR chargement: ${error.message}`);
+     }
+   }
+
+   // Fonctions pour les modals
+   function openAddEntrepriseModal() {
+     updateDebugInfo("Ouverture modal ajout entreprise");
+     // Réinitialiser le formulaire
+     document.getElementById('entrepriseId').value = '';
+     document.getElementById('entrepriseEmail').value = '';
+     document.getElementById('entreprisePassword').value = '';
+     document.getElementById('entrepriseRole').value = 'user';
+     
+     toggleModal('addEntrepriseModal', true);
+   }
+
+   function openEditEntrepriseModal(id) {
+     updateDebugInfo(`Ouverture modal édition entreprise ${id}`);
+     const entreprise = entreprises.find(e => e.ID === id);
+     if (!entreprise) {
+       showNotification('Entreprise non trouvée', 'error');
+       updateDebugInfo(`ERREUR: Entreprise ${id} non trouvée`);
+       return;
+     }
+     
+     document.getElementById('editEntrepriseId').value = entreprise.ID;
+     document.getElementById('editEntrepriseEmail').value = entreprise.email;
+     document.getElementById('editEntreprisePassword').value = '';
+     document.getElementById('editEntrepriseRole').value = entreprise.Role;
+     
+     toggleModal('editEntrepriseModal', true);
+   }
+
+   function openDeleteConfirmModal(id) {
+     updateDebugInfo(`Ouverture modal suppression entreprise ${id}`);
+     const entreprise = entreprises.find(e => e.ID === id);
+     if (!entreprise) {
+       showNotification('Entreprise non trouvée', 'error');
+       updateDebugInfo(`ERREUR: Entreprise ${id} non trouvée`);
+       return;
+     }
+     
+     document.getElementById('deleteEntrepriseName').textContent = entreprise.ID;
+     
+     toggleModal('confirmDeleteModal', true);
+     
+     document.getElementById('confirmDeleteBtn').onclick = async () => {
+       try {
+         updateDebugInfo(`Confirmation suppression ${id}`);
+         await deleteEntreprise(id);
+         toggleModal('confirmDeleteModal', false);
+         loadEntreprises();
+       } catch (error) {
+         console.error('Erreur lors de la suppression:', error);
+         updateDebugInfo(`ERREUR suppression: ${error.message}`);
+       }
+     };
+   }
+
+   function openAssociateFeuxModal(entrepriseId) {
+     updateDebugInfo(`Ouverture modal association de feux à ${entrepriseId}`);
+     document.getElementById('entrepriseNameAssoc').textContent = entrepriseId;
+     toggleModal('associateFeuxModal', true);
+     loadFeuxDisponibles(entrepriseId);
+   }
+
+   // Initialisation au chargement du document
+   document.addEventListener('DOMContentLoaded', () => {
+     console.log("==== DEBUG: DOM complètement chargé ====");
+     console.log("loginScreen visible:", document.getElementById('loginScreen').style.display);
+     console.log("app visible:", document.getElementById('app').style.display);
+     
+     updateDebugInfo("DOM chargé, initialisation des événements");
+     
+     // Définir les listeners pour les modals
+     document.querySelectorAll('.modal-close, .modal-close-btn').forEach(btn => {
+       btn.addEventListener('click', () => {
+         updateDebugInfo("Fermeture de modal");
+         document.querySelectorAll('.modal-overlay').forEach(modal => {
+           modal.classList.remove('active');
+         });
+       });
+     });
+     
+     // Listener pour le bouton d'ajout d'entreprise
+     document.getElementById('btnAddEntreprise').addEventListener('click', () => {
+       updateDebugInfo("Clic sur Ajouter entreprise");
+       openAddEntrepriseModal();
+     });
+     
+     // Listener pour la sauvegarde d'une nouvelle entreprise
+     document.getElementById('saveEntrepriseBtn').addEventListener('click', async () => {
+       updateDebugInfo("Clic sur Enregistrer nouvelle entreprise");
+       const id = document.getElementById('entrepriseId').value;
+       const email = document.getElementById('entrepriseEmail').value;
+       const password = document.getElementById('entreprisePassword').value;
+       const role = document.getElementById('entrepriseRole').value;
+       
+       updateDebugInfo(`Données: id=${id}, email=${email}, role=${role}`);
+       
+       if (!id || !email || !password) {
+         showNotification('Tous les champs sont obligatoires', 'error');
+         updateDebugInfo("ERREUR: Champs manquants");
+         return;
+       }
+       
+       try {
+         await addEntreprise({ id, email, password, role });
+         toggleModal('addEntrepriseModal', false);
+         loadEntreprises();
+       } catch (error) {
+         console.error('Erreur lors de l\'ajout:', error);
+         updateDebugInfo(`ERREUR ajout: ${error.message}`);
+       }
+     });
+     
+     // Listener pour la mise à jour d'une entreprise
+     document.getElementById('updateEntrepriseBtn').addEventListener('click', async () => {
+       updateDebugInfo("Clic sur Mettre à jour entreprise");
+       const id = document.getElementById('editEntrepriseId').value;
+       const email = document.getElementById('editEntrepriseEmail').value;
+       const password = document.getElementById('editEntreprisePassword').value;
+       const role = document.getElementById('editEntrepriseRole').value;
+       
+       updateDebugInfo(`Données: id=${id}, email=${email}, role=${role}`);
+       
+       if (!id || !email) {
+         showNotification('L\'email est obligatoire', 'error');
+         updateDebugInfo("ERREUR: Email manquant");
+         return;
+       }
+       
+       try {
+         const data = { email, role };
+         if (password) {
+           data.password = password;
+         }
+         
+         await updateEntreprise(id, data);
+         toggleModal('editEntrepriseModal', false);
+         loadEntreprises();
+       } catch (error) {
+         console.error('Erreur lors de la mise à jour:', error);
+         updateDebugInfo(`ERREUR mise à jour: ${error.message}`);
+       }
+     });
+     
+     // Listener pour le changement d'entreprise sélectionnée
+     document.getElementById('entrepriseSelect').addEventListener('change', function() {
+       selectedEntreprise = this.value;
+       updateDebugInfo(`Entreprise sélectionnée: ${selectedEntreprise}`);
+       loadFeuxForEntreprise(selectedEntreprise);
+     });
+     
+     // Listener pour le bouton d'association de feux
+     document.getElementById('btnAssociateFeux').addEventListener('click', () => {
+       updateDebugInfo("Clic sur Associer des feux");
+       if (!selectedEntreprise) {
+         showNotification('Veuillez sélectionner une entreprise', 'warning');
+         updateDebugInfo("ERREUR: Pas d'entreprise sélectionnée");
+         return;
+       }
+       
+       openAssociateFeuxModal(selectedEntreprise);
+     });
+     
+     // Listener pour le bouton de sauvegarde des associations
+     document.getElementById('saveAssociationBtn').addEventListener('click', async () => {
+       updateDebugInfo("Clic sur Associer les feux sélectionnés");
+       const checkboxes = document.querySelectorAll('.feu-checkbox:checked');
+       const feuxIds = Array.from(checkboxes).map(cb => cb.value);
+       
+       updateDebugInfo(`Feux sélectionnés: ${feuxIds.join(', ')}`);
+       
+       if (feuxIds.length === 0) {
+         showNotification('Veuillez sélectionner au moins un feu', 'warning');
+         updateDebugInfo("ERREUR: Aucun feu sélectionné");
+         return;
+       }
+       
+       try {
+         await associateFeuxToEntreprise(selectedEntreprise, feuxIds);
+         toggleModal('associateFeuxModal', false);
+         loadFeuxForEntreprise(selectedEntreprise);
+       } catch (error) {
+         console.error('Erreur lors de l\'association:', error);
+         updateDebugInfo(`ERREUR association: ${error.message}`);
+       }
+     });
+     
+     // Gestion de la connexion
+     document.getElementById('loginBtn').addEventListener('click', (event) => {
+       console.log("==== DEBUG: Bouton de connexion cliqué ====");
+       updateDebugInfo("Clic sur bouton de connexion");
+       event.preventDefault();
+       
+       const username = document.getElementById('username').value.trim();
+       const password = document.getElementById('password').value.trim();
+       
+       console.log("Tentative de connexion avec:", username);
+       updateDebugInfo(`Tentative connexion: username=${username}`);
+       
+       // Vérifier les identifiants d'administrateur
+       if (username === 'admin' && password === 'admin') {
+         updateDebugInfo("Connexion réussie: admin");
+         currentUser = { username: 'admin', role: 'admin' };
+         document.getElementById('loginScreen').style.display = 'none';
+         document.getElementById('app').style.display = 'block';
+         
+         updateDebugInfo("Éléments affichés: loginScreen=none, app=block");
+         
+         // Charger les données initiales
+         loadEntreprises();
+         
+         showNotification('Bienvenue dans l\'interface d\'administration', 'success');
+       } else {
+         updateDebugInfo("ERREUR: Identifiants incorrects");
+         showNotification('Identifiants incorrects. Seul l\'administrateur peut accéder à cette interface.', 'error');
+       }
+     });
+     
+     // Gestion de la déconnexion
+     document.getElementById('logoutBtn').addEventListener('click', () => {
+       updateDebugInfo("Clic sur déconnexion");
+       currentUser = null;
+       document.getElementById('app').style.display = 'none';
+       document.getElementById('loginScreen').style.display = 'block';
+       document.getElementById('username').value = '';
+       document.getElementById('password').value = '';
+       document.getElementById('username').focus();
+       updateDebugInfo("Déconnecté: loginScreen=block, app=none");
+     });
+     
+     updateDebugInfo("Initialisation terminée");
+   });
+ </script>
+</body>
+</html>
